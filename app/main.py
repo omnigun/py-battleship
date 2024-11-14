@@ -52,6 +52,38 @@ class Battleship:
         self.ships = [Ship(*ship) for ship in ships]
         self._place_ships()
 
+    @staticmethod
+    def _validate_field(ships: list) -> None:
+        if len(ships) != 10:
+            raise ValueError("There must be 10 ships.")
+        for ship in ships:
+            other_ships = [
+                end for temp in ships if temp != ship for end in temp
+            ]
+            for end in ship:
+                neighbours = [
+                    (end[0] - 1, end[1] - 1),
+                    (end[0] - 1, end[1]),
+                    (end[0] - 1, end[1] + 1),
+                    (end[0], end[1] - 1),
+                    (end[0], end[1] + 1),
+                    (end[0] + 1, end[1] - 1),
+                    (end[0] + 1, end[1]),
+                    (end[0] + 1, end[1] + 1),
+                ]
+
+                for neighbour in neighbours:
+                    if neighbour in other_ships:
+                        raise ValueError("The ships must not be adjacent.")
+
+        deck_size = []
+        for ship in ships:
+            deck_size.append(
+                (ship[1][0] - ship[0][0]) + (ship[1][1] - ship[0][1]) + 1
+            )
+        if sorted(deck_size) != [1, 1, 1, 1, 2, 2, 2, 3, 3, 4]:
+            raise ValueError("Wrong ship size configuration.")
+
     def _place_ships(self) -> None:
         for ship in self.ships:
             for deck in ship.decks:
@@ -59,16 +91,18 @@ class Battleship:
 
     def fire(self, location: tuple[int, int]) -> str:
         row, col = location
-        if self.field[row][col] == "~":
-            return "Miss!"
-        for ship in self.ships:
-            if ship.fire(row, col):
-                self.field[row][col] = "*"
-                if ship.is_drowned:
-                    for deck in ship.decks:
-                        self.field[deck.row][deck.column] = "x"
-                    return "Sunk!"
-                return "Hit!"
+        if self.field[row][col] == "~" or self.field[row][col] == ".":
+            self.field[row][col] = "."
+        else:
+            for ship in self.ships:
+                if ship.fire(row, col):
+                    self.field[row][col] = "*"
+                    if ship.is_drowned:
+                        for deck in ship.decks:
+                            self.field[deck.row][deck.column] = "x"
+                        return "Sunk!"
+                    return "Hit!"
+        return "Miss!"
 
     def _get_ship_cells(self, start: tuple[int, int],
                         end: tuple[int, int]
